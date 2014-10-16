@@ -1,3 +1,4 @@
+module Syntax where
 import qualified Data.Text as T
 
 data NumLiteral =
@@ -81,9 +82,9 @@ data UnaryExpression =
 
 data MultiplicativeExpression = 
   MultUnary UnaryExpression
-  | MultTimes UnaryExpression
-  | MultDivide UnaryExpression
-  | MultMod UnaryExpression
+  | MultTimes MultiplicativeExpression UnaryExpression
+  | MultDivide MultiplicativeExpression UnaryExpression
+  | MultMod MultiplicativeExpression UnaryExpression
 
 data AdditiveExpression = 
   AddMult MultiplicativeExpression

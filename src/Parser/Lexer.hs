@@ -12,10 +12,10 @@ lexer = Tok.makeTokenParser def
             names = ["break", "case", "catch", "continue", "debugger", "default", "delete", "do", "else", "finally", "for", "function", "if", "in", "instanceof", "new", "return", "switch", "this", "throw", "try", "typeof", "var", "void", "while", "with"]
             ops = ["[", "]", "(", ")", "{", "}", ".", ",", ";", "<", ">", "<=", ">=", "==", "!=", "===", "!==", "+", "-", "*", "%", "++", "--", "<<", ">>", ">>>", "&", "|", "^", "!", "~", "&&", "||", "?", ":", "=", "+=", "-=", "*=", "%=", "<<=", ">>=", ">>>=", "&=", "!=", "^="]
             def = emptyDef {
-              Tok.commentStart = "/*"
-              , Tok.commentEnd = "*/"
+              Tok.commentStart =  "/*"
+              , Tok.commentEnd =  "*/"
               , Tok.commentLine  = "//"
-              , Tok.identStart = letter <|> char '_' <|> "$" <|> "\\"
+              , Tok.identStart = letter <|> (char '_') <|> (char '$') 
               , Tok.identLetter = alphaNum <|> char '_'
               , Tok.reservedOpNames = ops 
               , Tok.reservedNames = names 
