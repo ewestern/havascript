@@ -98,7 +98,10 @@ pAdditiveExpression :: Parser AdditiveExpression
 pAdditiveExpression = try AddMult <$> pMultiplicativeExpresison <|> AddPlus <$> pAdditiveExpression <*> (reservedOp "+" *> pMultiplicativeExpression) <|> AddMinus <$> pAdditiveExpression <*> (reservedOp "-" *> pMultiplicativeExpression) <?> "Additive Expression"
 
 pShiftExpression :: Parser ShiftExpression
-pShiftExpression = ShiftAff        
+pShiftExpression = try ShiftAdd <$> pAdditiveExpression <|> ShiftRight <$> pShiftExpression <*> (reservedOp ">>" *> pAdditiveExpression) <|> ShiftLeft <$> pShiftExpression <*> (reservedOp "<<" *> pAdditiveExpression) <|> ShiftZ <$> pShiftExpression <*> (reservedOp ">>>" *> pAdditiveExpression)
+
+pRelationalExpression :: Parser RelationalExpression 
+pRelationalExpression = try RelationShift <$> pShiftExpression <|> RelationLT <$> pRelationalExpression <*> (reservedOp "<" *> pShiftExpression) <|> RelationGT <$> pRelationalExpression <*> (reservedOp ">" *> pShiftExpression) <|> RelationLTE <$> pRelationalExpression <*> (reservedOp "<=" *> pShiftExpression) <|> RelationGTE <$> pRelationalExpression <*> (reservedOp ">=" *> pShiftExpression) <|> RelationIO <$>  
  
 
 -- placeholders

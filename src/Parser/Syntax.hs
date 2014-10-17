@@ -101,7 +101,7 @@ data RelationalExpression =
   RelationShift ShiftExpression
   | RelationLT RelationalExpression ShiftExpression
   | RelationGT RelationalExpression ShiftExpression
-  | RelatiionLTE RelationalExpression ShiftExpression
+  | RelationLTE RelationalExpression ShiftExpression
   | RelationGTE RelationalExpression ShiftExpression
   | RelationIO RelationalExpression ShiftExpression
   | RelationIn RelationalExpression ShiftExpression
