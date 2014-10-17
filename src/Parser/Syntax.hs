@@ -139,13 +139,13 @@ data BitwiseXORExpNI =
   | BitwiseXORExpHatNI BitwiseXORExpNI BitwiseAndExpNI
 
 
-data BitwiseORExp = 
+data BitwiseOrExp = 
   BitwiseOrExp BitwiseXORExp
-  | BitwiseOrExpPipe BitwiseORExp BitwiseXORExp
+  | BitwiseOrExpPipe BitwiseOrExp BitwiseXOrExp
 
-data BitwiseORExpNI = 
+data BitwiseOrExpNI = 
   BitwiseOrExpNI BitwiseXORExpNI
-  | BitwiseORExpPipeNI BitwiseORExpNI BitwiseXORExpNI
+  | BitwiseOrExpPipeNI BitwiseOrExpNI BitwiseXORExpNI
 
 data LogicalAndExp = 
   LogicalAndExp BitwiseORExp
@@ -194,9 +194,10 @@ data AssignmentOperator =
   | XOREquals
   | OREquals
 
-data Expression = 
-  Expression AssignmentExpression
-  | ExpressionSeq AssignmentExpression
+type Expression = [AssignmentExpression]
+{-data Expression = -}
+  {-Expression AssignmentExpression-}
+  {-| ExpressionSeq AssignmentExpression-}
 
 data ExpressionNI = 
   ExpressionNI AssignmentExpressionNI
