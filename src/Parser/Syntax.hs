@@ -1,3 +1,4 @@
+
 module Syntax where
 import qualified Data.Text as T
 
@@ -66,7 +67,7 @@ data LHSExpression =
 data PostfixExpression = 
   PostfixLHS LHSExpression
   | PostfixInc LHSExpression
-  | PostgixDec LHSExpression
+  | PostfixDec LHSExpression
 
 data UnaryExpression = 
   UnaryExpression PostfixExpression
@@ -141,19 +142,19 @@ data BitwiseXORExpNI =
 
 data BitwiseOrExp = 
   BitwiseOrExp BitwiseXORExp
-  | BitwiseOrExpPipe BitwiseOrExp BitwiseXOrExp
+  | BitwiseOrExpPipe BitwiseOrExp BitwiseXORExp
 
 data BitwiseOrExpNI = 
   BitwiseOrExpNI BitwiseXORExpNI
   | BitwiseOrExpPipeNI BitwiseOrExpNI BitwiseXORExpNI
 
 data LogicalAndExp = 
-  LogicalAndExp BitwiseORExp
-  | LogicalAndExpAmp LogicalAndExp BitwiseORExp
+  LogicalAndExp BitwiseOrExp
+  | LogicalAndExpAmp LogicalAndExp BitwiseOrExp
 
 data LogicalAndExpNI = 
-  LogicalAndExpNI BitwiseORExpNI
-  | LogicalAndExpAmpNI LogicalAndExpNI BitwiseORExpNI
+  LogicalAndExpNI BitwiseOrExpNI
+  | LogicalAndExpAmpNI LogicalAndExpNI BitwiseOrExpNI
 
 data LogicalOrExp = 
   LogicalOrExp LogicalAndExp
@@ -241,11 +242,9 @@ type InitializerNI = AssignmentExpressionNI
 data EmptyStatement = EmptyStatement
 
 -- todo: what is this
-data ExpressionStatement = ExpressionStatement
+data ExpressionStatement = ExpressionStatement Expression
 
-data IfStatement = 
-  IfElseStatement Expression Statement Statement
-  | IfStatement Expression Statement
+data IfStatement = IfStatement Expression Statement (Maybe Statement) 
 
 data IterationStatement = 
   DoWhile Statement Expression
