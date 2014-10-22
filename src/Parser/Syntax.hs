@@ -1,19 +1,19 @@
 
 module Syntax where
-import qualified Data.Text as T
+{-import qualified Data.Text as T-}
 
 data NumLiteral =
-   DecLiteral Float
-  | HexLiteral T.Text
+   DecLiteral Double 
+  | HexLiteral String
 
 data Literal =
   NullLiteral
   | BooleanLiteral Bool
   | NumericLiteral NumLiteral 
-  | StringLiteral T.Text
-  | RegExLiteral T.Text
+  | StringLiteral String
+  | RegExLiteral String
 
-type Identifier = T.Text 
+type Identifier = String 
 data PrimaryExpression = 
    This
   | IdentifierExp Identifier
@@ -34,7 +34,7 @@ data PropertyAssignment =
 
 data PropertyName = 
   PropertyNameIdentifier Identifier
-  | PropertyNameString T.Text 
+  | PropertyNameString String 
   | PropertyNameNumber NumLiteral
 
 type PropertySetParamList = Identifier 
@@ -42,8 +42,8 @@ type PropertySetParamList = Identifier
 data MemberExpression = 
   MemberExpressionPrimary PrimaryExpression
   | MemberExpressionFunction FunctionExpression
-  | MemberExpressionSquare Expression
-  | MemberExpressionDot  Identifier
+  | MemberExpressionSquare MemberExpression Expression
+  | MemberExpressionDot MemberExpression Identifier
   | MemberExpressionNew MemberExpression Arguments
 
 data NewExpression =
@@ -52,9 +52,9 @@ data NewExpression =
 
 data CallExpression = 
   CallExpressionMember MemberExpression Arguments
-  | CallExpressionArgs Arguments
-  | CallExpressionExp Expression
-  | CallExpressionIdent Identifier
+  | CallExpressionArgs CallExpression Arguments
+  | CallExpressionExp CallExpression Expression
+  | CallExpressionIdent CallExpression Identifier
 
 type Arguments = ArgumentList
 
@@ -89,8 +89,8 @@ data MultiplicativeExpression =
 
 data AdditiveExpression = 
   AddMult MultiplicativeExpression
-  | AddPlus MultiplicativeExpression
-  | AddMinus MultiplicativeExpression
+  | AddPlus AdditiveExpression MultiplicativeExpression
+  | AddMinus AdditiveExpression MultiplicativeExpression
 
 data ShiftExpression = 
   ShiftAdd AdditiveExpression
@@ -116,11 +116,11 @@ data RelationalExpressionNI =
   | RelationIONI RelationalExpressionNI ShiftExpression  
 
 data EqualityExpression = 
-  EqualityExp ShiftExpression
-  | EqualityExpEq EqualityExpression ShiftExpression
-  | EqualityExpNE EqualityExpression ShiftExpression
-  | EqualityExpEqq EqualityExpression ShiftExpression
-  | EqualityExpNEE EqualityExpression ShiftExpression
+  EqualityExp RelationalExpression
+  | EqualityExpEq EqualityExpression RelationalExpression
+  | EqualityExpNE EqualityExpression RelationalExpression
+  | EqualityExpEqq EqualityExpression RelationalExpression
+  | EqualityExpNEE EqualityExpression RelationalExpression
 
 data BitwiseAndExp =
   BitwiseAndEq EqualityExpression

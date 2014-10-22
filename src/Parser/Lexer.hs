@@ -2,12 +2,14 @@
 
 module Lexer where
 
-import Text.Parsec.Text (Parser)
+{-import Text.Parsec.Text (Parser)-}
 import Text.Parsec
-import qualified Data.Text as T
+{-import qualified Data.Text as T-}
 import qualified Text.Parsec.Token as Tok
 import Text.Parsec.Language (emptyDef, LanguageDef)
 import Syntax
+
+type Parser = Parsec String () 
 
 lexer :: Tok.TokenParser ()
 lexer = Tok.makeTokenParser def
@@ -25,7 +27,7 @@ lexer = Tok.makeTokenParser def
             }
 
 
-comma :: Parser T.Text 
+comma :: Parser String 
 comma = Tok.comma lexer
 
 ticks :: Parser a -> Parser a
@@ -43,13 +45,13 @@ squares = Tok.squares lexer
 braces :: Parser a -> Parser a
 braces = Tok.braces lexer
 
-symbol :: T.Text -> Parser T.Text 
+symbol :: String -> Parser String 
 symbol = Tok.symbol lexer
 
-dot :: Parser T.Text
+dot :: Parser String
 dot = Tok.dot lexer
 
-colon :: Parser T.Text 
+colon :: Parser String 
 colon = Tok.colon lexer
 
 commaSep :: Parser a -> Parser [a]
@@ -64,13 +66,13 @@ semiSep = Tok.semiSep lexer
 semiSep1 :: Parser a -> Parser [a]
 semiSep1 = Tok.semiSep1 lexer
 
-identifier :: Parser T.Text 
+identifier :: Parser String 
 identifier = Tok.identifier lexer
 
-reserved :: T.Text -> Parser ()
+reserved :: String -> Parser ()
 reserved = Tok.reserved lexer
 
-reservedOp :: T.Text -> Parser ()
+reservedOp :: String -> Parser ()
 reservedOp = Tok.reservedOp lexer
 
 whiteSpace :: Parser ()
@@ -82,7 +84,7 @@ number = Tok.naturalOrFloat lexer
 lexeme :: Parser a -> Parser a
 lexeme = Tok.lexeme lexer
 
-stringLiteral :: Parser T.Text 
+stringLiteral :: Parser String 
 stringLiteral = Tok.stringLiteral lexer
 {-stringLiteral :: Parser String-}
 {-stringLiteral = q-}

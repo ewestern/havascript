@@ -2,19 +2,20 @@
 
 module Parser where
 import Text.Parsec
-import Control.Applicative ((<*>), (<$>), (*>), (<*))
-import Text.Parsec.Text
+import Control.Applicative hiding ((<|>), many)
+{-import Control.Applicative ((<*>), (<$>), (*>), (<*))-}
+{-import Text.Parsec.Text-}
 import Syntax
 import Lexer
 
 pPrimaryExpression :: Parser PrimaryExpression
-pPrimaryExpression = reserved "this" *> This <|> IdentifierExp <$> identifier <|> LiteralExp <$> pLiteral <|> ArrayExp <$> pArrayLiteral <|> ObjectExp <$> pObjectLiteral <|> ExpressionExp <$> pExpression 
+pPrimaryExpression = (reserved "this" >> return This) <|> IdentifierExp <$> identifier <|> LiteralExp <$> pLiteral <|> ArrayExp <$> pArrayLiteral <|> ObjectExp <$> pObjectLiteral <|> ExpressionExp <$> pExpression 
 
 pDecLiteral :: Parser NumLiteral
 pDecLiteral = do
   en <- number
   case en of
-    (Left i) -> return $ DecLiteral i
+    (Left i) -> return $ DecLiteral . fromIntegral $  i
     (Right d) -> return $ DecLiteral d
 
 pNumLiteral :: Parser NumLiteral
@@ -22,16 +23,16 @@ pNumLiteral = pDecLiteral
 -- add Hex Parser
 
 pNullLiteral :: Parser Literal
-pNullLiteral = reserved "null" *> NullLiteral 
+pNullLiteral = reserved "null" >> return NullLiteral 
 
 pBoolLiteral :: Parser Literal
-pBoolLiteral = pTrue <|> pFalse 
+pBoolLiteral = BooleanLiteral <$> pTrue <|> BooleanLiteral <$> pFalse 
   where
     pTrue = reserved "true" >> return True
     pFalse = reserved "false" >> return False 
 
 pLiteral :: Parser Literal
-pLiteral = pBoolLiteral <|> pNullLiteral <|> StringLiteral <|> pNumLiteral
+pLiteral = pBoolLiteral <|> pNullLiteral <|> StringLiteral <$> stringLiteral <|> NumericLiteral <$> pNumLiteral
 
 pArrayLiteral :: Parser ArrayLiteral
 pArrayLiteral = squares (commaSep pAssignmentExpression)
@@ -60,14 +61,14 @@ pMemberExpression :: Parser MemberExpression
 pMemberExpression = (MemberExpressionPrimary <$> pPrimaryExpression) <|> (MemberExpressionFunction <$> pFunctionExpression) <|> pMemberSquare <|> pMemberDot <|> pMemberNew <?> "Member Expression"
   where 
     pMemberSquare = MemberExpressionSquare <$> pMemberExpression <*> (squares pExpression)
-    pMemberDot = MemberExpressionSquare <$> pMemberExpression <*> (dot *> identifier) 
-    pMemberNew = MemberExpressionNew <$> reserved "new" *> pMemberExpression <*> pArguments
+    pMemberDot = MemberExpressionDot <$> pMemberExpression <*> (dot *> identifier) 
+    pMemberNew = reserved "new" *> (MemberExpressionNew <$> pMemberExpression <*> pArguments)
 
 pNewExpression :: Parser NewExpression
-pNewExpression = (NewExpressionMember <$> pMemberExpression) <|> (NewExpressionNew <$> reserved "new" *> pNewExpression)  <?> "New Expression"
+pNewExpression = (NewExpressionMember <$> pMemberExpression) <|> reserved "new" *> (NewExpressionNew <$> pNewExpression) <?> "New Expression"
 
 pCallExpression :: Parser CallExpression
-pCallExpression = try (CallExpressionMember <$>  pMemberExpression <*> pArguments) <|> (CallExpressionArgs <$> pCallExpression <*> pArguments) <|> (CallExpressionExp <$> pCallExpression <*> (squares pExpression)) <|> (CallExpressionIdent <$> pCallExpression <*> dot *> identifier) <?> "Call Expression"    
+pCallExpression = try (CallExpressionMember <$>  pMemberExpression <*> pArguments) <|> CallExpressionArgs <$> pCallExpression <*> pArguments <|> CallExpressionExp <$> pCallExpression <*> (squares pExpression) <|> CallExpressionIdent <$> pCallExpression <*> (dot *> identifier) <?> "Call Expression"    
 
 pArguments :: Parser Arguments
 pArguments = parens (return []) <|> parens pArgumentList
@@ -86,51 +87,51 @@ pPostfixExpression = try (PostfixLHS <$> pLHSExpression) <|> pInc <|> pDec
     pDec = PostfixDec <$> pLHSExpression <* reservedOp "--"
 
 pUnaryExpression :: Parser UnaryExpression
-pUnaryExpression = try UnaryExpression <$> pPostfixExpression <|> UnaryExpressionDelete <$> (reserved "delete" *> pUnaryExpression) <|> UnaryExpressionVoid <$> (reserved "void" *> pUnaryExpression ) <|> UnaryExpressionTypeOf <$> (reserved "typeof" *> pUnaryExpression) <|> UnaryExpressionInc <$> (reservedOp "++" *> pUnaryExpression) <|> UnaryExpressionDec <$> (reservedOp "--" *> pUnaryExpression) <|> UnaryExpressionPlus <$> (reservedOp "+" *> pUnaryExpression) <|> UnaryExpressionMinus <$> (reservedOp "-" *> pUnaryExpression) <|> UnaryExpressionTilde <$> (reservedOp "~" *> pUnaryExpression) <|> UnaryExpressionNot <$> (reservedOp "!" *> pUnaryExpression) <?> "Unary Expression"
+pUnaryExpression = try (UnaryExpression <$> pPostfixExpression) <|> UnaryExpressionDelete <$> (reserved "delete" *> pUnaryExpression) <|> UnaryExpressionVoid <$> (reserved "void" *> pUnaryExpression ) <|> UnaryExpressionTypeOf <$> (reserved "typeof" *> pUnaryExpression) <|> UnaryExpressionInc <$> (reservedOp "++" *> pUnaryExpression) <|> UnaryExpressionDec <$> (reservedOp "--" *> pUnaryExpression) <|> UnaryExpressionPlus <$> (reservedOp "+" *> pUnaryExpression) <|> UnaryExpressionMinus <$> (reservedOp "-" *> pUnaryExpression) <|> UnaryExpressionTilde <$> (reservedOp "~" *> pUnaryExpression) <|> UnaryExpressionNot <$> (reservedOp "!" *> pUnaryExpression) <?> "Unary Expression"
 
 pMultiplicativeExpression :: Parser MultiplicativeExpression
-pMultiplicativeExpression =  try MultUnary <$> pUnaryExpression <|> MultDivide <$> pMultiplicativeExpression <*> (reservedOp "*" *> pUnaryExpression) <|> MultTimes <$> pMultiplicativeExpression <*> (reservedOp "/" *> pUnaryExpression) <|> MultMod <$> pMultiplicativeExpression <*> (reservedOp "%" *> pUnaryExpression) <?> "Multiplicative Expression"
+pMultiplicativeExpression =  try (MultUnary <$> pUnaryExpression) <|> MultDivide <$> pMultiplicativeExpression <*> (reservedOp "*" *> pUnaryExpression) <|> MultTimes <$> pMultiplicativeExpression <*> (reservedOp "/" *> pUnaryExpression) <|> MultMod <$> pMultiplicativeExpression <*> (reservedOp "%" *> pUnaryExpression) <?> "Multiplicative Expression"
 
 pAdditiveExpression :: Parser AdditiveExpression
-pAdditiveExpression = try AddMult <$> pMultiplicativeExpression <|> AddPlus <$> pAdditiveExpression <*> (reservedOp "+" *> pMultiplicativeExpression) <|> AddMinus <$> pAdditiveExpression <*> (reservedOp "-" *> pMultiplicativeExpression) <?> "Additive Expression"
+pAdditiveExpression = try (AddMult <$> pMultiplicativeExpression) <|> AddPlus <$> pAdditiveExpression <*> (reservedOp "+" *> pMultiplicativeExpression) <|> AddMinus <$> pAdditiveExpression <*> (reservedOp "-" *> pMultiplicativeExpression) <?> "Additive Expression"
 
 pShiftExpression :: Parser ShiftExpression
-pShiftExpression = try ShiftAdd <$> pAdditiveExpression <|> ShiftRight <$> pShiftExpression <*> (reservedOp ">>" *> pAdditiveExpression) <|> ShiftLeft <$> pShiftExpression <*> (reservedOp "<<" *> pAdditiveExpression) <|> ShiftZ <$> pShiftExpression <*> (reservedOp ">>>" *> pAdditiveExpression) <?> "Shift Expression"
+pShiftExpression = try (ShiftAdd <$> pAdditiveExpression) <|> ShiftRight <$> pShiftExpression <*> (reservedOp ">>" *> pAdditiveExpression) <|> ShiftLeft <$> pShiftExpression <*> (reservedOp "<<" *> pAdditiveExpression) <|> ShiftZ <$> pShiftExpression <*> (reservedOp ">>>" *> pAdditiveExpression) <?> "Shift Expression"
 
 pRelationalExpression :: Parser RelationalExpression 
-pRelationalExpression = try RelationShift <$> pShiftExpression <|> RelationLT <$> pRelationalExpression <*> (reservedOp "<" *> pShiftExpression) <|> RelationGT <$> pRelationalExpression <*> (reservedOp ">" *> pShiftExpression) <|> RelationLTE <$> pRelationalExpression <*> (reservedOp "<=" *> pShiftExpression) <|> RelationGTE <$> pRelationalExpression <*> (reservedOp ">=" *> pShiftExpression) <|> RelationIO <$> pRelationalExpression <*> (reserved "instanceof" *> pShiftExpression) <|> pRelationalExpression <*> (reserved "in" *> pShiftExpression) <?> "Relational Expression"
+pRelationalExpression = try (RelationShift <$> pShiftExpression) <|> RelationLT <$> pRelationalExpression <*> (reservedOp "<" *> pShiftExpression) <|> RelationGT <$> pRelationalExpression <*> (reservedOp ">" *> pShiftExpression) <|> RelationLTE <$> pRelationalExpression <*> (reservedOp "<=" *> pShiftExpression) <|> RelationGTE <$> pRelationalExpression <*> (reservedOp ">=" *> pShiftExpression) <|> RelationIO <$> pRelationalExpression <*> (reserved "instanceof" *> pShiftExpression) <|> RelationIn <$> pRelationalExpression <*> (reserved "in" *> pShiftExpression) <?> "Relational Expression"
 
 
 pRelationalExpressionNI :: Parser RelationalExpressionNI
-pRelationalExpressionNI = try RelationShiftNI <$> pShiftExpression <|> RelationLTNI <$> pRelationalExpressionNI <*> (reservedOp "<" *> pShiftExpression) <|> RelationGTNI <$> pRelationalExpressionNI <*> (reservedOp ">" *> pShiftExpression) <|> RelationLTENI <$> pRelationalExpressionNI <*> (reservedOp "<=" *> pShiftExpression) <|> RelationGTENI <$> pRelationalExpressionNI <*> (reservedOp ">=" *> pShiftExpression) <|> RelationIONI <$> pRelationalExpression <*> (reserved "instanceof" *> pShiftExpression) <?> "Relational Expression NI"
+pRelationalExpressionNI = try (RelationShiftNI <$> pShiftExpression) <|> RelationLTNI <$> pRelationalExpressionNI <*> (reservedOp "<" *> pShiftExpression) <|> RelationGTNI <$> pRelationalExpressionNI <*> (reservedOp ">" *> pShiftExpression) <|> RelationLTENI <$> pRelationalExpressionNI <*> (reservedOp "<=" *> pShiftExpression) <|> RelationGTENI <$> pRelationalExpressionNI <*> (reservedOp ">=" *> pShiftExpression) <|> RelationIONI <$> pRelationalExpressionNI <*> (reserved "instanceof" *> pShiftExpression) <?> "Relational Expression NI"
 
 pEqualityExpression :: Parser EqualityExpression
-pEqualityExpression = try EqualityExp <$> pRelationalExpression <|> EqualityExpEq <$> pEqualityExpression <*> (reservedOp "==" *> pRelationalExpression) <|> EqualityExpNE <$> pEqualityExpression <*> (reservedOp "!=" pRelationalExpression) <|>   EqualityExpEqq <$> pEqualityExpression <*> (reservedOp "===" *> pRelationalExpression) <|> EqualityExpNEE <$> pEqualityExpression <*> (reservedOp "!==" *> pRelationalExpression) <?> "Equality Expression"
+pEqualityExpression = try (EqualityExp <$> pRelationalExpression) <|> EqualityExpEq <$> pEqualityExpression <*> (reservedOp "==" *> pRelationalExpression) <|> EqualityExpNE <$> pEqualityExpression <*> (reservedOp "!=" *> pRelationalExpression) <|>   EqualityExpEqq <$> pEqualityExpression <*> (reservedOp "===" *> pRelationalExpression) <|> EqualityExpNEE <$> pEqualityExpression <*> (reservedOp "!==" *> pRelationalExpression) <?> "Equality Expression"
 
 -- EqualityNI
 --
 pBitwiseAndExp :: Parser BitwiseAndExp
-pBitwiseAndExp = try BitwiseAndEq <$> pEqualityExpression <|> BitwiseAnd <$> pBitwiseAndExp <*> (reservedOp "&" *> pEqualityExpression) <?> "Bitwise And Exp"
+pBitwiseAndExp = try (BitwiseAndEq <$> pEqualityExpression) <|> BitwiseAnd <$> pBitwiseAndExp <*> (reservedOp "&" *> pEqualityExpression) <?> "Bitwise And Exp"
 
 --- BitwiseAndNI
 --
 pBitwiseXORExp :: Parser BitwiseXORExp
-pBitwiseXORExp = try BitwiseXORExp <$> pBitwiseAndExp <|> BitwiseXORExpHat <$> pBitwiseXORExp <*> (reservedOp "^" *> pBitwiseAndExp) <?> "Bitwise XOR Exp"
+pBitwiseXORExp = try (BitwiseXORExp <$> pBitwiseAndExp) <|> BitwiseXORExpHat <$> pBitwiseXORExp <*> (reservedOp "^" *> pBitwiseAndExp) <?> "Bitwise XOR Exp"
 
 pBitwiseOrExp :: Parser BitwiseOrExp
-pBitwiseOrExp = try BitwiseOrExp <$> pBitwiseXORExp <|> BitwiseOrExpPipe <$> pBitwiseOrExp <*> (reservedOp "|" *> pBitwiseXORExp) <?> "Reserved OR Exp"
+pBitwiseOrExp = try (BitwiseOrExp <$> pBitwiseXORExp) <|> BitwiseOrExpPipe <$> pBitwiseOrExp <*> (reservedOp "|" *> pBitwiseXORExp) <?> "Reserved OR Exp"
 
 pLogicalAndExp :: Parser LogicalAndExp
-pLogicalAndExp = try LogicalAndExp <$> pBitwiseOrExp <|> LogicalAndExpAmp <$> pLogicalAndExp <*> (reservedOp "&" *> pBitwiseOrExp) <?> "Logical And Exp"
+pLogicalAndExp = try (LogicalAndExp <$> pBitwiseOrExp) <|> LogicalAndExpAmp <$> pLogicalAndExp <*> (reservedOp "&" *> pBitwiseOrExp) <?> "Logical And Exp"
 
 pLogicalOrExp :: Parser LogicalOrExp
-pLogicalOrExp = try LogicalOrExp <$> pLogicalAndExp <|> LogicalOrExpDPipe <$> pLogicalOrExp <*> (reservedOp "||" *> pLogicalAndExp) <?> "Logical Or Exp"   
+pLogicalOrExp = try (LogicalOrExp <$> pLogicalAndExp) <|> LogicalOrExpDPipe <$> pLogicalOrExp <*> (reservedOp "||" *> pLogicalAndExp) <?> "Logical Or Exp"   
 
 pConditionalExp :: Parser ConditionalExp
-pConditionalExp = try ConditionalExp <$> pLogicalOrExp <|> ConditionalExpTern <$> pLogicalOrExp <*> (reservedOp "?" *> pAssignmentExpression) <*> (reservedOp ":" *> pAssignmentExpression) <?> "Conditional Exp"
+pConditionalExp = try (ConditionalExp <$> pLogicalOrExp) <|> ConditionalExpTern <$> pLogicalOrExp <*> (reservedOp "?" *> pAssignmentExpression) <*> (reservedOp ":" *> pAssignmentExpression) <?> "Conditional Exp"
 
 pAssignmentExpression :: Parser AssignmentExpression
-pAssignmentExpression = try AssignmentExpression <$> pConditionalExp <|> AssignmentExpEq <$> pLHSExpression <*> (reservedOp "=" *> pAssignmentExpression) <|> AssignmentExpOp <$> pLHSExpression <*> pAssignmentOperator <*> pAssignmentExpression <?> "Assignment Expression"
+pAssignmentExpression = try (AssignmentExpression <$> pConditionalExp) <|> AssignmentExpEq <$> pLHSExpression <*> (reservedOp "=" *> pAssignmentExpression) <|> AssignmentExpOp <$> pLHSExpression <*> pAssignmentOperator <*> pAssignmentExpression <?> "Assignment Expression"
 
 pAssignmentOperator :: Parser AssignmentOperator
 pAssignmentOperator = reservedOp "*=" *> return TimesEquals <|> reservedOp "/=" *> return DivEquals <|> reservedOp "%=" *> return ModEquals <|> reservedOp "-=" *> return MinusEquals <|> reservedOp "<<=" *> return LSEquals <|> reservedOp ">>=" *> return RSEquals <|> reservedOp ">>>=" *> return RSSEquals <|> reservedOp "&=" *> return AndEquals <|> reservedOp "^=" *> return XOREquals <|> reservedOp "|=" *> return OREquals  
@@ -139,7 +140,7 @@ pExpression :: Parser Expression
 pExpression = commaSep1 pAssignmentExpression 
 
 pStatement :: Parser Statement
-pStatement = try BlockStmt <$> pBlock <|> VariableStmt <$> pVariableStatement <|> EmptyStmt <$> pEmptyStatement <|> ExpressionStmt <$> pExpressionStatement <|> IfStmt <$> pIfStatement <|> IterationStmt <$> pIterationStatement <|> ContinueStmt <$> pContinueStatement <|> BreakStmt <$> pBreakStatement <|> ReturnStmt <$> pReturnStatement <|> WithStmt <$> pWithStatement <|> LabeledStmt <$> pLabelledStatement <|> SwitchStmt <$> pSwitchStatement <|> ThrowStmt <$> pThrowStatement <|> TryStmt <$> pTryStatement <?> DebugStmt <$> pDebuggerStatement 
+pStatement = try (BlockStmt <$> pBlock) <|> VariableStmt <$> pVariableStatement <|> EmptyStmt <$> pEmptyStatement <|> ExpressionStmt <$> pExpressionStatement <|> IfStmt <$> pIfStatement <|> IterationStmt <$> pIterationStatement <|> ContinueStmt <$> pContinueStatement <|> BreakStmt <$> pBreakStatement <|> ReturnStmt <$> pReturnStatement <|> WithStmt <$> pWithStatement <|> LabeledStmt <$> pLabelledStatement <|> SwitchStmt <$> pSwitchStatement <|> ThrowStmt <$> pThrowStatement <|> TryStmt <$> pTryStatement <|> DebugStmt <$> pDebuggerStatement  <?> "Statement"
 
 pBlock :: Parser Block 
 pBlock = braces pStatementList
@@ -205,7 +206,7 @@ pBreakStatement = reserved "break" >> (optionMaybe identifier) <* reservedOp ";"
 
 
 pReturnStatement :: Parser ReturnStatement
-pReturnStatement = reserved "return" >> (optionMaybe identifier) <* reservedOp ";"
+pReturnStatement = reserved "return" >> (optionMaybe pExpression) <* reservedOp ";"
 
 pWithStatement :: Parser WithStatement
 pWithStatement = reserved "with" >> WithStatement <$> (parens pExpression) <*> pStatement
@@ -234,18 +235,18 @@ pThrowStatement = reserved "throw" >> ThrowStatement <$> pExpression <* reserved
 pTryStatement :: Parser TryStatement
 pTryStatement = try pTryBlockCatch <|> pTryFinally <|> pTryCF 
   where
-    pTryBlockCatch = reserved "try" *> TryCatch <$> pBlock <*> pCatch
-    pTryFinally = reserved "try" *> TryFinally <$> pBlock <*> pFinally
-    pTryCF = reserved "try" *> TryCF <$> pBlock <*> pCatch <*> pFinally
+    pTryBlockCatch = reserved "try" *> (TryCatch <$> pBlock <*> pCatch)
+    pTryFinally = reserved "try" *> (TryFinally <$> pBlock <*> pFinally)
+    pTryCF = reserved "try" *> (TryCF <$> pBlock <*> pCatch <*> pFinally)
 
 pCatch :: Parser Catch
-pCatch = reserved "catch" *> Catch <$> (parens identifier) <*> pBlock
+pCatch = reserved "catch" *> (Catch <$> (parens identifier) <*> pBlock)
 
 pFinally :: Parser Finally
-pFinally = reserved "finally" *> pBlock
+pFinally = reserved "finally" *> (Finally <$> pBlock)
 
 pDebuggerStatement :: Parser DebuggerStatement
-pDebuggerStatement = reserved "debugger" *> reservedOp ";" *> Debugger
+pDebuggerStatement = reserved "debugger" *> reservedOp ";" *> pure Debugger
 
 pFunctionDeclaration :: Parser FunctionDeclaration
 pFunctionDeclaration = do
@@ -264,7 +265,7 @@ pFunctionExpression = do
   return $ FunctionExpression id fpl fb
  
 pFormalParameterList :: Parser FormalParameterList
-pFormalParameterList = commaSep1 pSourceElements
+pFormalParameterList = commaSep1 identifier 
 
 pFunctionBody :: Parser FunctionBody
 pFunctionBody = FunctionBody <$> optionMaybe pSourceElements
