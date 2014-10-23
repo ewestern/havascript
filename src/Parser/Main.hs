@@ -10,9 +10,9 @@ import System.Environment
 main = do
   args <- getArgs
   --contents <- readFile $ 
-  res <- parseFromFile pFileInput (head args) 
+  res <- parseFromFile pProgram (head args) 
   case res of
-    Left s -> putStrLn $ groom s
+    Left s -> putStrLn . show $ s
     Right a -> print a
 
 
