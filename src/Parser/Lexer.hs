@@ -14,7 +14,7 @@ type Parser = Parsec String ()
 lexer :: Tok.TokenParser ()
 lexer = Tok.makeTokenParser def
           where 
-            names = ["break", "case", "catch", "continue", "debugger", "default", "delete", "do", "else", "finally", "for", "function", "if", "in", "instanceof", "new", "return", "switch", "this", "throw", "try", "typeof", "var", "void", "while", "with"]
+            names = ["break", "case", "catch", "continue", "debugger", "default", "delete", "do", "else", "finally", "for", "function", "if", "in", "instanceof", "new", "return", "switch", "this", "throw", "try", "typeof", "var", "void", "while", "with", "false", "true"]
             ops = ["[", "]", "(", ")", "{", "}", ".", ",", ";", "<", ">", "<=", ">=", "==", "!=", "===", "!==", "+", "-", "*", "%", "++", "--", "<<", ">>", ">>>", "&", "|", "^", "!", "~", "&&", "||", "?", ":", "=", "+=", "-=", "*=", "%=", "<<=", ">>=", ">>>=", "&=", "!=", "^="]
             def = emptyDef {
               Tok.commentStart =  "/*"
