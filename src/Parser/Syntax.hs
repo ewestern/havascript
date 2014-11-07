@@ -1,3 +1,5 @@
+{-#Language GADTs #-}
+{-#Language ExistentialQuantification #-}
 
 module Syntax where
 {-import qualified Data.Text as T-}
@@ -71,146 +73,72 @@ data LHSExpression =
   LHSExpressionNew NewExpression
   | LHSExpressionCall CallExpression deriving (Show)
 
+data RelationalOperator = 
+  LT
+  | GT
+  | LTE
+  | GTE
+  | IO deriving (Show)
 
-data PostfixExpression = 
-  PostfixLHS LHSExpression
-  | PostfixInc LHSExpression
-  | PostfixDec LHSExpression deriving (Show)
+data ShiftOperator = 
+  LShift
+  | RShift
+  | ZShift deriving (Show)
 
+data AdditiveOperator = 
+  Plus
+  | Minus deriving (Show)
 
-data UnaryExpression = 
-  UnaryExpression PostfixExpression
-  | UnaryExpressionDelete UnaryExpression
-  | UnaryExpressionVoid UnaryExpression
-  | UnaryExpressionTypeOf UnaryExpression
-  | UnaryExpressionInc UnaryExpression
-  | UnaryExpressionDec UnaryExpression
-  | UnaryExpressionPlus UnaryExpression
-  | UnaryExpressionMinus UnaryExpression
-  | UnaryExpressionTilde UnaryExpression
-  | UnaryExpressionNot UnaryExpression deriving (Show)
+data MultiplicativeOperator = 
+  Times
+  | Divide
+  | Modulo deriving (Show)
 
+data UnaryOperator = 
+  Delete
+  | Void
+  | Typeof
+  | IncU
+  | DecU
+  | PosU
+  | Neg
+  | Tilde
+  | Not deriving (Show)
 
-data MultiplicativeExpression = 
-  MultUnary UnaryExpression
-  | MultTimes MultiplicativeExpression UnaryExpression
-  | MultDivide MultiplicativeExpression UnaryExpression
-  | MultMod MultiplicativeExpression UnaryExpression deriving (Show)
+data PostfixOperator = 
+  IncP
+  | DecP deriving (Show)
 
+data AssignmentExpression = forall a . AssignmentExpression (Exp a)
 
-data AdditiveExpression = 
-  AddMult MultiplicativeExpression
-  | AddPlus AdditiveExpression MultiplicativeExpression
-  | AddMinus AdditiveExpression MultiplicativeExpression deriving (Show)
+instance Show AssignmentExpression where
+  show (AssignmentExpression a) = show a
 
-
-data ShiftExpression = 
-  ShiftAdd AdditiveExpression
-  | ShiftLeft ShiftExpression AdditiveExpression
-  | ShiftRight ShiftExpression AdditiveExpression
-  | ShiftZ ShiftExpression AdditiveExpression deriving (Show)
-
-  
-data RelationalExpression = 
-  RelationShift ShiftExpression
-  | RelationLT RelationalExpression ShiftExpression
-  | RelationGT RelationalExpression ShiftExpression
-  | RelationLTE RelationalExpression ShiftExpression
-  | RelationGTE RelationalExpression ShiftExpression
-  | RelationIO RelationalExpression ShiftExpression
-  | RelationIn RelationalExpression ShiftExpression deriving (Show)
-
-  
-data RelationalExpressionNI = 
-  RelationShiftNI ShiftExpression
-  | RelationLTNI RelationalExpressionNI ShiftExpression
-  | RelationGTNI RelationalExpressionNI ShiftExpression
-  | RelationLTENI RelationalExpressionNI ShiftExpression
-  | RelationGTENI  RelationalExpressionNI ShiftExpression
-  | RelationIONI RelationalExpressionNI ShiftExpression  deriving (Show)
-
-
-data EqualityExpression = 
-  EqualityExp RelationalExpression
-  | EqualityExpEq EqualityExpression RelationalExpression
-  | EqualityExpNE EqualityExpression RelationalExpression
-  | EqualityExpEqq EqualityExpression RelationalExpression
-  | EqualityExpNEE EqualityExpression RelationalExpression deriving (Show)
+data Exp a where
+  Assignment :: LHSExpression -> Exp a -> Exp a 
+  AssignmentOp :: LHSExpression -> AssignmentOperator -> Exp a -> Exp a
+  Conditional :: Exp a -> Exp a -> Exp a -> Exp a  
+  LogicalOr :: Exp a -> Exp a -> Exp a 
+  LogicalAnd :: Exp a -> Exp a -> Exp a 
+  BitwiseOr  :: Exp a -> Exp a -> Exp a 
+  BitwiseXOR :: Exp a -> Exp a -> Exp a
+  {-RelationalExp :: Exp a -> Exp a -> Exp a-}
+  BitwiseAnd :: Exp a -> Exp a -> Exp a
+  Equality :: EqualityOperator -> Exp a -> Exp a -> Exp a
+  Relational :: RelationalOperator -> Exp a -> Exp a -> Exp a
+  Shift :: ShiftOperator -> Exp a -> Exp a -> Exp a
+  Additive :: AdditiveOperator -> Exp a -> Exp a -> Exp a
+  Multiplicative :: MultiplicativeOperator -> Exp a -> Exp a -> Exp a
+  Unary :: UnaryOperator -> Exp a -> Exp a
+  Postfix :: PostfixOperator -> LHSExpression -> Exp a
+  deriving (Show)
 
 
-data BitwiseAndExp =
-  BitwiseAndEq EqualityExpression
-  | BitwiseAnd BitwiseAndExp EqualityExpression deriving (Show)
-
-
-data BitwiseAndExpNI =
-  BitwiseAndNIEq EqualityExpression
-  | BitwiseAndNI BitwiseAndExp EqualityExpression deriving (Show)
-
- 
-data BitwiseXORExp = 
-  BitwiseXORExp BitwiseAndExp
-  | BitwiseXORExpHat BitwiseXORExp BitwiseAndExp deriving (Show)
-
-   
-
-data BitwiseXORExpNI = 
-  BitwiseXORExpNI BitwiseAndExpNI
-  | BitwiseXORExpHatNI BitwiseXORExpNI BitwiseAndExpNI deriving (Show)
-
-
-
-data BitwiseOrExp = 
-  BitwiseOrExp BitwiseXORExp
-  | BitwiseOrExpPipe BitwiseOrExp BitwiseXORExp deriving (Show)
-
-
-data BitwiseOrExpNI = 
-  BitwiseOrExpNI BitwiseXORExpNI
-  | BitwiseOrExpPipeNI BitwiseOrExpNI BitwiseXORExpNI deriving (Show)
-
-
-data LogicalAndExp = 
-  LogicalAndExp BitwiseOrExp
-  | LogicalAndExpAmp LogicalAndExp BitwiseOrExp deriving (Show)
-
-
-data LogicalAndExpNI = 
-  LogicalAndExpNI BitwiseOrExpNI
-  | LogicalAndExpAmpNI LogicalAndExpNI BitwiseOrExpNI deriving (Show)
-
-
-data LogicalOrExp = 
-  LogicalOrExp LogicalAndExp
-  | LogicalOrExpDPipe LogicalOrExp LogicalAndExp deriving (Show)
-
-
-data LogicalOrExpNI = 
-  LogicalOrExpNI LogicalAndExpNI
-  | LogicalOrExpDPipeNI LogicalOrExpNI LogicalAndExpNI deriving (Show)
-
-
-data ConditionalExp = 
-  ConditionalExp LogicalOrExp
-  | ConditionalExpTern LogicalOrExp AssignmentExpression AssignmentExpression deriving (Show)
-
-
-data ConditionalExpNI =
-  ConditionalExpNI LogicalOrExpNI
-  | ConditionalExpTernNI LogicalOrExpNI AssignmentExpression AssignmentExpressionNI deriving (Show)
-
-
-data AssignmentExpression = 
-  AssignmentExpression ConditionalExp
-  | AssignmentExpEq LHSExpression AssignmentExpression
-  | AssignmentExpOp LHSExpression AssignmentOperator AssignmentExpression deriving (Show)
-
-
-data AssignmentExpressionNI = 
-  AssignmentExpressionNI ConditionalExpNI
-  | AssignmentExpEqNI LHSExpression AssignmentExpressionNI
-  | AssignmentExpOpNI LHSExpression AssignmentOperator AssignmentExpressionNI deriving (Show)
-
+data EqualityOperator = 
+  Equal
+  | NotEqual
+  | IsEqual 
+  | IsNotEqual deriving (Show)
 
 data AssignmentOperator =
   TimesEquals
@@ -227,13 +155,10 @@ data AssignmentOperator =
 
 
 type Expression = [AssignmentExpression]
-{-data Expression = -}
-  {-Expression AssignmentExpression-}
-  {-| ExpressionSeq AssignmentExpression-}
 
-data ExpressionNI = 
-  ExpressionNI AssignmentExpressionNI
-  | ExpressionNISeq AssignmentExpressionNI deriving (Show)
+{-data ExpressionNI = -}
+  {-ExpressionNI AssignmentExpressionNI-}
+  {-| ExpressionNISeq AssignmentExpressionNI deriving (Show)-}
 
 
 data Statement = 
@@ -262,15 +187,15 @@ type VariableStatement = VariableDeclarationList
 
 type VariableDeclarationList = [VariableDeclaration]
 
-type VariableDeclarationListNI = [VariableDeclarationNI]
+{-type VariableDeclarationListNI = [VariableDeclarationNI]-}
 
 data VariableDeclaration = VariableDeclaration Identifier (Maybe Initializer) deriving (Show)
 
-data VariableDeclarationNI = VariableDeclarationNI Identifier (Maybe InitializerNI) deriving (Show)
+{-data VariableDeclarationNI = VariableDeclarationNI Identifier (Maybe InitializerNI) deriving (Show)-}
 
 
 type Initializer = AssignmentExpression
-type InitializerNI = AssignmentExpressionNI
+{-type InitializerNI = AssignmentExpressionNI-}
 
 data EmptyStatement = EmptyStatement deriving (Show)
 
@@ -284,10 +209,10 @@ data IfStatement = IfStatement Expression Statement (Maybe Statement) deriving (
 data IterationStatement = 
   DoWhile Statement Expression
   | While Expression Statement
-  | ForExp (Maybe ExpressionNI) (Maybe Expression) (Maybe Expression) Statement
-  | ForVar VariableDeclarationListNI (Maybe Expression) (Maybe Expression) Statement
-  | ForLHS LHSExpression Expression Statement
-  | ForVarIn VariableDeclarationNI Expression Statement deriving (Show)
+  {-| ForExp (Maybe ExpressionNI) (Maybe Expression) (Maybe Expression) Statement-}
+  {-| ForVar VariableDeclarationListNI (Maybe Expression) (Maybe Expression) Statement-}
+  | ForLHS LHSExpression Expression Statement deriving (Show)
+  {-| ForVarIn VariableDeclarationNI Expression Statement deriving (Show)-}
 
 
 type ContinueStatement = Maybe Identifier
