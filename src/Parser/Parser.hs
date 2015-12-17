@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ExistentialQuantification #-}
 
 module Parser where
 import Text.Parsec
@@ -113,9 +114,16 @@ table = [
           [binary' LogicalAnd (reservedOp "&&")],
           [binary' LogicalOr (reservedOp "||")],
           [binary' Conditional (reservedOp  
-
-
         ]
+
+data Fixity =
+  Prefix (Parser (a -> a))
+  | Postfix (Parser (a -> a))
+  | Infix (Parser (a -> a -> a))
+  | Ternary (Parser (a -> a -> a -> a))
+   
+ 
+{-ternary cons op1 op2 = Exp-}
 
 binary cons op = Expr.Infix (cons <$> op) AssocLeft
 

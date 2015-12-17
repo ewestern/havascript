@@ -23,7 +23,7 @@ data PrimaryExpression =
   | LiteralExp Literal
   | ArrayExp ArrayLiteral
   | ObjectExp ObjectLiteral
-  | ExpressionExp Expression deriving (Show)
+  | ExpressionExp ExpressionList deriving (Show)
 
 
 type ArrayLiteral =  [AssignmentExpression]
@@ -48,7 +48,7 @@ type PropertySetParamList = Identifier
 data MemberExpression = 
   MemberExpressionPrimary PrimaryExpression
   | MemberExpressionFunction FunctionExpression
-  | MemberExpressionSquare MemberExpression Expression
+  | MemberExpressionSquare MemberExpression ExpressionList
   | MemberExpressionDot MemberExpression Identifier
   | MemberExpressionNew MemberExpression Arguments deriving (Show)
 
@@ -61,7 +61,7 @@ data NewExpression =
 data CallExpression = 
   CallExpressionMember MemberExpression Arguments
   | CallExpressionArgs CallExpression Arguments
-  | CallExpressionExp CallExpression Expression
+  | CallExpressionExp CallExpression ExpressionList
   | CallExpressionIdent CallExpression Identifier deriving (Show)
 
 
@@ -114,15 +114,16 @@ data AssignmentExpression = forall a . AssignmentExpression (Exp a)
 instance Show AssignmentExpression where
   show (AssignmentExpression a) = show a
 
+data Expression = 
+  Conditional :: Exp a -> Exp a -> Exp a -> Exp a  
+
 data Exp a where
   Assignment :: LHSExpression -> Exp a -> Exp a 
   AssignmentOp :: LHSExpression -> AssignmentOperator -> Exp a -> Exp a
-  Conditional :: Exp a -> Exp a -> Exp a -> Exp a  
   LogicalOr :: Exp a -> Exp a -> Exp a 
   LogicalAnd :: Exp a -> Exp a -> Exp a 
   BitwiseOr  :: Exp a -> Exp a -> Exp a 
   BitwiseXOR :: Exp a -> Exp a -> Exp a
-  {-RelationalExp :: Exp a -> Exp a -> Exp a-}
   BitwiseAnd :: Exp a -> Exp a -> Exp a
   Equality :: EqualityOperator -> Exp a -> Exp a -> Exp a
   Relational :: RelationalOperator -> Exp a -> Exp a -> Exp a
@@ -154,7 +155,7 @@ data AssignmentOperator =
   | OREquals deriving (Show)
 
 
-type Expression = [AssignmentExpression]
+type ExpressionList = [AssignmentExpression]
 
 {-data ExpressionNI = -}
   {-ExpressionNI AssignmentExpressionNI-}
@@ -200,18 +201,18 @@ type Initializer = AssignmentExpression
 data EmptyStatement = EmptyStatement deriving (Show)
 
 -- todo: what is this
-data ExpressionStatement = ExpressionStatement Expression deriving (Show)
+data ExpressionStatement = ExpressionStatement ExpressionList deriving (Show)
 
 
-data IfStatement = IfStatement Expression Statement (Maybe Statement) deriving (Show)
+data IfStatement = IfStatement ExpressionList Statement (Maybe Statement) deriving (Show)
 
 
 data IterationStatement = 
-  DoWhile Statement Expression
-  | While Expression Statement
+  DoWhile Statement ExpressionList
+  | While ExpressionList Statement
   {-| ForExp (Maybe ExpressionNI) (Maybe Expression) (Maybe Expression) Statement-}
   {-| ForVar VariableDeclarationListNI (Maybe Expression) (Maybe Expression) Statement-}
-  | ForLHS LHSExpression Expression Statement deriving (Show)
+  | ForLHS LHSExpression ExpressionList Statement deriving (Show)
   {-| ForVarIn VariableDeclarationNI Expression Statement deriving (Show)-}
 
 
@@ -219,14 +220,14 @@ type ContinueStatement = Maybe Identifier
 
 type BreakStatement = Maybe Identifier
 
-type ReturnStatement = Maybe Expression
+type ReturnStatement = Maybe ExpressionList
 
 data WithStatement = 
-  WithStatement Expression Statement deriving (Show)
+  WithStatement ExpressionList Statement deriving (Show)
 
 
 data SwitchStatement = 
-  SwitchStatement Expression CaseBlock deriving (Show)
+  SwitchStatement ExpressionList CaseBlock deriving (Show)
 
 
 data CaseBlock = 
@@ -236,7 +237,7 @@ data CaseBlock =
 type CaseClauses = [CaseClause]
 
 data CaseClause = 
-  CaseClause Expression (Maybe StatementList) deriving (Show)
+  CaseClause ExpressionList (Maybe StatementList) deriving (Show)
 
 
 data DefaultClause = 
@@ -248,7 +249,7 @@ data LabelledStatement =
 
 
 data ThrowStatement = 
-  ThrowStatement Expression deriving (Show)
+  ThrowStatement ExpressionList deriving (Show)
 
 
 data TryStatement = 
