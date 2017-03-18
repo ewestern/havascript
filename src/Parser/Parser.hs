@@ -1,15 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Parser where
+module Parser.Parser where
 import Text.Parsec
 import Control.Applicative hiding ((<|>), many)
 {-import Control.Applicative ((<*>), (<$>), (*>), (<*))-}
 {-import Text.Parsec.Text-}
-import Syntax
-import Lexer
+import Parser.Syntax
+import Parser.Lexer
 
 pPrimaryExpression :: Parser PrimaryExpression
 pPrimaryExpression = (reserved "this" >> return This) <|> try (IdentifierExp <$> identifier) <|> try (LiteralExp <$> pLiteral) <|> ArrayExp <$> pArrayLiteral <|> ObjectExp <$> pObjectLiteral <|> ExpressionExp <$> pExpression <?> "Primary Expression"
+
+
 
 pDecLiteral :: Parser NumLiteral
 pDecLiteral = do
@@ -59,7 +61,7 @@ pPropertyName = (PropertyNameIdentifier <$> identifier) <|> (PropertyNameString 
 
 pMemberExpression :: Parser MemberExpression 
 pMemberExpression = 
-          MemberExpressionPrimary <$> pPrimaryExpression 
+              MemberExpressionPrimary <$> pPrimaryExpression 
           <|> MemberExpressionFunction <$> pFunctionExpression 
           <|> pMemberSquare 
           <|> pMemberDot 
@@ -92,7 +94,7 @@ pArgumentList = commaSep1 pAssignmentExpression
 
 pLHSExpression :: Parser LHSExpression
 pLHSExpression = 
-        LHSExpressionNew <$> pNewExpression 
+            LHSExpressionNew <$> pNewExpression 
         <|> LHSExpressionCall <$> pCallExpression 
         <?> "LHS Expression"
 
@@ -105,7 +107,7 @@ pPostfixExpression = PostfixLHS <$> pLHSExpression <|> try pInc <|> try pDec
 
 pUnaryExpression :: Parser UnaryExpression
 pUnaryExpression = 
-        UnaryExpression <$> pPostfixExpression 
+            UnaryExpression <$> pPostfixExpression 
         <|> UnaryExpressionDelete <$> (reserved "delete" *> pUnaryExpression) 
         <|> UnaryExpressionVoid <$> (reserved "void" *> pUnaryExpression ) 
         <|> UnaryExpressionTypeOf <$> (reserved "typeof" *> pUnaryExpression) 

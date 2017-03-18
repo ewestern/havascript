@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Lexer where
+module Parser.Lexer where
 
 {-import Text.Parsec.Text (Parser)-}
 import Text.Parsec
 {-import qualified Data.Text as T-}
 import qualified Text.Parsec.Token as Tok
 import Text.Parsec.Language (emptyDef, LanguageDef)
-import Syntax
+import Parser.Syntax
 
 type Parser = Parsec String () 
 
