@@ -27,7 +27,12 @@ spec = do
       parse' pLiteral "\"foo\"" `shouldBe` StringLiteral "foo"
 
     it "parses unary expression not" $ 
-      parse' pUnaryExpression "!foo" `shouldBe` (UnaryExpressionNot $ UnaryExpression $ PostfixLHS $ LHSExpressionNew $ NewExpressionMember $ MemberExpressionPrimary $ IdentifierExp "foo" )
+      parse' pUnaryExpression "!foo" `shouldBe` (UnaryExpression UnaryNot $ UnaryPostfix $ PostfixLHS $ LHSExpressionNew $ NewExpressionMember $ MemberExpressionPrimary $ IdentifierExp "foo" )
+    it "parses multiplicative *" $ do
+      let e1 = MultUnary $ UnaryPostfix $ PostfixLHS $ LHSExpressionNew $ NewExpressionMember $ MemberExpressionPrimary $ LiteralExp  $ NumericLiteral $ DecLiteral 2
+      let e2 = MultUnary $ UnaryPostfix $ PostfixLHS $ LHSExpressionNew $ NewExpressionMember $ MemberExpressionPrimary $ LiteralExp  $ NumericLiteral $ DecLiteral 3
+  
+      parse' pMultiplicativeExpression "2 * 3" `shouldBe` MultiplicativeExpression e1 MultTimes e2
     {-it "parses property names" $ -}
       {-parse' pPropertyName ""-}
     

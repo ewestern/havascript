@@ -3,13 +3,19 @@
 module Parser.Parser where
 import Text.Parsec
 import Control.Applicative hiding ((<|>), many)
-{-import Control.Applicative ((<*>), (<$>), (*>), (<*))-}
-{-import Text.Parsec.Text-}
 import Parser.Syntax
 import Parser.Lexer
+import Text.Parsec.Expr
+import Debug.Trace
 
 pPrimaryExpression :: Parser PrimaryExpression
-pPrimaryExpression = (reserved "this" >> return This) <|> try (IdentifierExp <$> identifier) <|> try (LiteralExp <$> pLiteral) <|> ArrayExp <$> pArrayLiteral <|> ObjectExp <$> pObjectLiteral <|> ExpressionExp <$> pExpression <?> "Primary Expression"
+pPrimaryExpression = 
+        (reserved "this" >> return This)
+    <|> try (IdentifierExp <$> identifier) 
+    <|> try (LiteralExp <$> pLiteral) 
+    <|> ArrayExp <$> pArrayLiteral 
+    <|> ObjectExp <$> pObjectLiteral 
+    <|> ExpressionExp <$> pExpression <?> "Primary Expression"
 
 
 
@@ -80,7 +86,7 @@ pNewExpression =
 
 pCallExpression :: Parser CallExpression
 pCallExpression = 
-        CallExpressionMember <$> pMemberExpression <*> pArguments 
+            CallExpressionMember <$> pMemberExpression <*> pArguments 
         <|> CallExpressionArgs <$> pCallExpression <*> pArguments 
         <|> CallExpressionExp <$> pCallExpression <*> (squares pExpression) 
         <|> CallExpressionIdent <$> pCallExpression <*> (dot *> identifier) 
@@ -98,6 +104,9 @@ pLHSExpression =
         <|> LHSExpressionCall <$> pCallExpression 
         <?> "LHS Expression"
 
+
+
+
 pPostfixExpression :: Parser PostfixExpression
 pPostfixExpression = PostfixLHS <$> pLHSExpression <|> try pInc <|> try pDec
   -- ensure no line break
@@ -105,30 +114,49 @@ pPostfixExpression = PostfixLHS <$> pLHSExpression <|> try pInc <|> try pDec
     pInc = PostfixInc <$> pLHSExpression <* reservedOp "++"
     pDec = PostfixDec <$> pLHSExpression <* reservedOp "--"
 
+postfixChain :: Parser a -> Parser (a -> a) -> Parser a
+postfixChain p op = do
+  x <- p
+  rest x
+  where
+    rest x = (do f <- op
+                 rest $ f x) <|> return x
+
 pUnaryExpression :: Parser UnaryExpression
 pUnaryExpression = 
-            UnaryExpression <$> pPostfixExpression 
-        <|> UnaryExpressionDelete <$> (reserved "delete" *> pUnaryExpression) 
-        <|> UnaryExpressionVoid <$> (reserved "void" *> pUnaryExpression ) 
-        <|> UnaryExpressionTypeOf <$> (reserved "typeof" *> pUnaryExpression) 
-        <|> UnaryExpressionInc <$> (reservedOp "++" *> pUnaryExpression) 
-        <|> UnaryExpressionDec <$> (reservedOp "--" *> pUnaryExpression) 
-        <|> UnaryExpressionPlus <$> (reservedOp "+" *> pUnaryExpression) 
-        <|> UnaryExpressionMinus <$> (reservedOp "-" *> pUnaryExpression) 
-        <|> UnaryExpressionTilde <$> (reservedOp "~" *> pUnaryExpression) 
-        <|> UnaryExpressionNot <$> (reservedOp "!" *> pUnaryExpression) 
+            UnaryExpression <$> pUnaryOp <*> pUnaryExpression
+        <|> UnaryPostfix <$> pPostfixExpression
         <?> "Unary Expression"
 
+pUnaryOp :: Parser UnaryOp
+pUnaryOp = 
+      reserved "delete" *> pure UnaryDelete
+  <|> reserved "void"   *> pure UnaryVoid 
+  <|> reserved "typeof" *> pure UnaryTypeOf
+  <|> reservedOp "++"   *> pure UnaryInc 
+  <|> reservedOp "--"   *> pure UnaryDec
+  <|> reservedOp "+"    *> pure UnaryPlus 
+  <|> reservedOp "-"    *> pure UnaryMinus 
+  <|> reservedOp "-"    *> pure UnaryTilde 
+  <|> reservedOp "!"    *> pure UnaryNot
 
+
+pMultiplicativeOp :: Parser MultiplicativeOp
+pMultiplicativeOp = 
+      reservedOp "*" *> pure MultTimes
+  <|> reservedOp "/" *> pure MultDivide
+  <|> reservedOp "%" *> pure MultMod
+  
+ 
 
 pMultiplicativeExpression :: Parser MultiplicativeExpression
 pMultiplicativeExpression =  
-        MultUnary <$> pUnaryExpression 
-        <|> MultDivide <$> pMultiplicativeExpression <*> (reservedOp "*" *> pUnaryExpression) 
-        <|> MultTimes <$> pMultiplicativeExpression <*> (reservedOp "/" *> pUnaryExpression) 
-        <|> MultMod <$> pMultiplicativeExpression <*> (reservedOp "%" *> pUnaryExpression) 
-        <?> "Multiplicative Expression"
-
+      chainl1 pMultiplicativeExpression pOp
+  <|> MultUnary <$> pUnaryExpression
+  <?> "Multiplicative Expression"
+    where
+      pOp = fmap (\op e1 e2-> MultiplicativeExpression e1 op e2) pMultiplicativeOp
+      
 pAdditiveExpression :: Parser AdditiveExpression
 pAdditiveExpression = 
         try (AddMult <$> pMultiplicativeExpression)
@@ -215,6 +243,11 @@ pAssignmentExpression =
         <|> AssignmentExpEq <$> pLHSExpression <*> (reservedOp "=" *> pAssignmentExpression) 
         <|> AssignmentExpOp <$> pLHSExpression <*> pAssignmentOperator <*> pAssignmentExpression 
         <?> "Assignment Expression"
+
+{-
+pAssignmentExpression :: Parser AssignmentExpression
+pAssignmentExpression = buildExpressionParser table pLHSExpression <?> "assignment expression"
+-}
 
 pAssignmentOperator :: Parser AssignmentOperator
 pAssignmentOperator = 

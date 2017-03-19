@@ -15,7 +15,7 @@ data Literal =
 
 type Identifier = String 
 data PrimaryExpression = 
-   This
+    This
   | IdentifierExp Identifier
   | LiteralExp Literal
   | ArrayExp ArrayLiteral
@@ -77,28 +77,34 @@ data PostfixExpression =
   | PostfixDec LHSExpression deriving (Eq, Show)
 
 
-data UnaryExpression = 
-    UnaryExpression PostfixExpression
-  | UnaryExpressionDelete UnaryExpression
-  | UnaryExpressionVoid UnaryExpression
-  | UnaryExpressionTypeOf UnaryExpression
-  | UnaryExpressionInc UnaryExpression
-  | UnaryExpressionDec UnaryExpression
-  | UnaryExpressionPlus UnaryExpression
-  | UnaryExpressionMinus UnaryExpression
-  | UnaryExpressionTilde UnaryExpression
-  | UnaryExpressionNot UnaryExpression deriving (Eq, Show)
+data UnaryOp
+  = UnaryDelete
+  | UnaryVoid
+  | UnaryTypeOf
+  | UnaryInc
+  | UnaryDec
+  | UnaryPlus
+  | UnaryMinus
+  | UnaryTilde
+  | UnaryNot deriving (Eq, Show)
 
+data UnaryExpression = 
+    UnaryExpression UnaryOp UnaryExpression
+  | UnaryPostfix PostfixExpression deriving (Eq, Show)
+
+
+data MultiplicativeOp
+  = MultTimes
+  | MultDivide
+  | MultMod deriving (Eq, Show)
 
 data MultiplicativeExpression = 
     MultUnary UnaryExpression
-  | MultTimes MultiplicativeExpression UnaryExpression
-  | MultDivide MultiplicativeExpression UnaryExpression
-  | MultMod MultiplicativeExpression UnaryExpression deriving (Eq, Show)
+  | MultiplicativeExpression MultiplicativeExpression MultiplicativeOp UnaryExpression deriving (Eq, Show)
 
 
 data AdditiveExpression = 
-  AddMult MultiplicativeExpression
+    AddMult MultiplicativeExpression
   | AddPlus AdditiveExpression MultiplicativeExpression
   | AddMinus AdditiveExpression MultiplicativeExpression deriving (Eq, Show)
 
