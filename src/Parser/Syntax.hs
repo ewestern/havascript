@@ -71,151 +71,64 @@ data LHSExpression =
   | LHSExpressionCall CallExpression deriving (Eq, Show)
 
 
-data PostfixExpression = 
-  PostfixLHS LHSExpression
-  | PostfixInc LHSExpression
-  | PostfixDec LHSExpression deriving (Eq, Show)
-
-
-data UnaryOp
-  = UnaryDelete
-  | UnaryVoid
-  | UnaryTypeOf
-  | UnaryInc
-  | UnaryDec
-  | UnaryPlus
-  | UnaryMinus
-  | UnaryTilde
-  | UnaryNot deriving (Eq, Show)
-
-data UnaryExpression = 
-    UnaryExpression UnaryOp UnaryExpression
-  | UnaryPostfix PostfixExpression deriving (Eq, Show)
-
-
-data MultiplicativeOp
+data BinaryOperator
   = MultTimes
   | MultDivide
-  | MultMod deriving (Eq, Show)
-
-data MultiplicativeExpression = 
-    MultUnary UnaryExpression
-  | MultiplicativeExpression MultiplicativeExpression MultiplicativeOp UnaryExpression deriving (Eq, Show)
-
-
-data AdditiveExpression = 
-    AddMult MultiplicativeExpression
-  | AddPlus AdditiveExpression MultiplicativeExpression
-  | AddMinus AdditiveExpression MultiplicativeExpression deriving (Eq, Show)
-
-
-data ShiftExpression = 
-  ShiftAdd AdditiveExpression
-  | ShiftLeft ShiftExpression AdditiveExpression
-  | ShiftRight ShiftExpression AdditiveExpression
-  | ShiftZ ShiftExpression AdditiveExpression deriving (Eq, Show)
-
+  | MultMod
+  | AddPlus
+  | AddMinus
+  | ShiftLeft
+  | ShiftRight
+  | ShiftRRight
+  | RelLT
+  | RelGT
+  | RelLTE
+  | RelGTE
+  | RelInstanceOf
+  | RelIn
+  | EqEq
+  | EqNE
+  | EqEqq
+  | EqNEE
+  | BitOr
+  | BitAnd
+  | BitXOr
+  | LogAnd
+  | LogOr deriving (Eq, Show)
   
-data RelationalExpression = 
-  RelationShift ShiftExpression
-  | RelationLT RelationalExpression ShiftExpression
-  | RelationGT RelationalExpression ShiftExpression
-  | RelationLTE RelationalExpression ShiftExpression
-  | RelationGTE RelationalExpression ShiftExpression
-  | RelationIO RelationalExpression ShiftExpression
-  | RelationIn RelationalExpression ShiftExpression deriving (Eq, Show)
 
+data PrefixOperator
+  = PrefixDelete
+  | PrefixVoid
+  | PrefixIncr
+  | PrefixDecr
+  | PrefixPlus
+  | PrefixMinus
+  | PrefixTilde
+  | PrefixNot deriving (Eq, Show)
+
+data PostfixOperator
+  = PostfixIncr
+  | PostfixDecr deriving (Eq, Show)
+
+--- 
+
+data OperatorExpression
+  =  OperatorExpressionBinary OperatorExpression BinaryOperator OperatorExpression
+  |  OperatorExpressionPrefix PrefixOperator OperatorExpression 
+  |  OperatorExpressionPostfix OperatorExpression PostfixOperator
+  |  OperatorExpressionLHS LHSExpression deriving (Eq, Show)
   
-data RelationalExpressionNI = 
-  RelationShiftNI ShiftExpression
-  | RelationLTNI RelationalExpressionNI ShiftExpression
-  | RelationGTNI RelationalExpressionNI ShiftExpression
-  | RelationLTENI RelationalExpressionNI ShiftExpression
-  | RelationGTENI  RelationalExpressionNI ShiftExpression
-  | RelationIONI RelationalExpressionNI ShiftExpression  deriving (Eq, Show)
-
-
-data EqualityExpression = 
-  EqualityExp RelationalExpression
-  | EqualityExpEq EqualityExpression RelationalExpression
-  | EqualityExpNE EqualityExpression RelationalExpression
-  | EqualityExpEqq EqualityExpression RelationalExpression
-  | EqualityExpNEE EqualityExpression RelationalExpression deriving (Eq, Show)
-
-
-data BitwiseAndExp =
-  BitwiseAndEq EqualityExpression
-  | BitwiseAnd BitwiseAndExp EqualityExpression deriving (Eq, Show)
-
-
-data BitwiseAndExpNI =
-  BitwiseAndNIEq EqualityExpression
-  | BitwiseAndNI BitwiseAndExp EqualityExpression deriving (Eq, Show)
-
- 
-data BitwiseXORExp = 
-  BitwiseXORExp BitwiseAndExp
-  | BitwiseXORExpHat BitwiseXORExp BitwiseAndExp deriving (Eq, Show)
-
-   
-
-data BitwiseXORExpNI = 
-  BitwiseXORExpNI BitwiseAndExpNI
-  | BitwiseXORExpHatNI BitwiseXORExpNI BitwiseAndExpNI deriving (Eq, Show)
-
-
-
-data BitwiseOrExp = 
-  BitwiseOrExp BitwiseXORExp
-  | BitwiseOrExpPipe BitwiseOrExp BitwiseXORExp deriving (Eq, Show)
-
-
-data BitwiseOrExpNI = 
-  BitwiseOrExpNI BitwiseXORExpNI
-  | BitwiseOrExpPipeNI BitwiseOrExpNI BitwiseXORExpNI deriving (Eq, Show)
-
-
-data LogicalAndExp = 
-  LogicalAndExp BitwiseOrExp
-  | LogicalAndExpAmp LogicalAndExp BitwiseOrExp deriving (Eq, Show)
-
-
-data LogicalAndExpNI = 
-  LogicalAndExpNI BitwiseOrExpNI
-  | LogicalAndExpAmpNI LogicalAndExpNI BitwiseOrExpNI deriving (Eq, Show)
-
-
-data LogicalOrExp = 
-  LogicalOrExp LogicalAndExp
-  | LogicalOrExpDPipe LogicalOrExp LogicalAndExp deriving (Eq, Show)
-
-
-data LogicalOrExpNI = 
-  LogicalOrExpNI LogicalAndExpNI
-  | LogicalOrExpDPipeNI LogicalOrExpNI LogicalAndExpNI deriving (Eq, Show)
 
 
 data ConditionalExp = 
-  ConditionalExp LogicalOrExp
-  | ConditionalExpTern LogicalOrExp AssignmentExpression AssignmentExpression deriving (Eq, Show)
-
-
-data ConditionalExpNI =
-  ConditionalExpNI LogicalOrExpNI
-  | ConditionalExpTernNI LogicalOrExpNI AssignmentExpression AssignmentExpressionNI deriving (Eq, Show)
-
+  ConditionalExp OperatorExpression
+  | ConditionalExpTern OperatorExpression AssignmentExpression AssignmentExpression deriving (Eq, Show)
 
 data AssignmentExpression = 
   AssignmentExpression ConditionalExp
   | AssignmentExpEq LHSExpression AssignmentExpression
   | AssignmentExpOp LHSExpression AssignmentOperator AssignmentExpression deriving (Eq, Show)
-
-
-data AssignmentExpressionNI = 
-  AssignmentExpressionNI ConditionalExpNI
-  | AssignmentExpEqNI LHSExpression AssignmentExpressionNI
-  | AssignmentExpOpNI LHSExpression AssignmentOperator AssignmentExpressionNI deriving (Eq, Show)
-
 
 data AssignmentOperator =
   TimesEquals
@@ -232,17 +145,9 @@ data AssignmentOperator =
 
 
 type Expression = [AssignmentExpression]
-{-data Expression = -}
-  {-Expression AssignmentExpression-}
-  {-| ExpressionSeq AssignmentExpression-}
-
-data ExpressionNI = 
-  ExpressionNI AssignmentExpressionNI
-  | ExpressionNISeq AssignmentExpressionNI deriving (Eq, Show)
-
 
 data Statement = 
-  BlockStmt Block 
+    BlockStmt Block 
   | VariableStmt VariableStatement
   | EmptyStmt EmptyStatement
   | ExpressionStmt ExpressionStatement
@@ -267,15 +172,9 @@ type VariableStatement = VariableDeclarationList
 
 type VariableDeclarationList = [VariableDeclaration]
 
-type VariableDeclarationListNI = [VariableDeclarationNI]
-
 data VariableDeclaration = VariableDeclaration Identifier (Maybe Initializer) deriving (Eq, Show)
 
-data VariableDeclarationNI = VariableDeclarationNI Identifier (Maybe InitializerNI) deriving (Eq, Show)
-
-
 type Initializer = AssignmentExpression
-type InitializerNI = AssignmentExpressionNI
 
 data EmptyStatement = EmptyStatement deriving (Eq, Show)
 
@@ -289,10 +188,11 @@ data IfStatement = IfStatement Expression Statement (Maybe Statement) deriving (
 data IterationStatement = 
   DoWhile Statement Expression
   | While Expression Statement
-  | ForExp (Maybe ExpressionNI) (Maybe Expression) (Maybe Expression) Statement
-  | ForVar VariableDeclarationListNI (Maybe Expression) (Maybe Expression) Statement
-  | ForLHS LHSExpression Expression Statement
-  | ForVarIn VariableDeclarationNI Expression Statement deriving (Eq, Show)
+-- TODO come back to these!
+  {-| ForExp (Maybe ExpressionNI) (Maybe Expression) (Maybe Expression) Statement-}
+  {-| ForVar VariableDeclarationListNI (Maybe Expression) (Maybe Expression) Statement-}
+  | ForLHS LHSExpression Expression Statement deriving (Eq, Show)
+
 
 
 type ContinueStatement = Maybe Identifier

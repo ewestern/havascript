@@ -26,15 +26,21 @@ spec = do
     it "parses a string literal" $ 
       parse' pLiteral "\"foo\"" `shouldBe` StringLiteral "foo"
 
-    it "parses unary expression not" $ 
-      parse' pUnaryExpression "!foo" `shouldBe` (UnaryExpression UnaryNot $ UnaryPostfix $ PostfixLHS $ LHSExpressionNew $ NewExpressionMember $ MemberExpressionPrimary $ IdentifierExp "foo" )
+    it "parses prefix expression not" $ 
+      parse' pOperatorExpression "!foo" `shouldBe` (OperatorExpressionPrefix PrefixNot $ OperatorExpressionLHS $ LHSExpressionNew $ NewExpressionMember $ MemberExpressionPrimary $ IdentifierExp "foo" )
+    
     it "parses multiplicative *" $ do
-      let e1 = MultUnary $ UnaryPostfix $ PostfixLHS $ LHSExpressionNew $ NewExpressionMember $ MemberExpressionPrimary $ LiteralExp  $ NumericLiteral $ DecLiteral 2
-      let e2 = MultUnary $ UnaryPostfix $ PostfixLHS $ LHSExpressionNew $ NewExpressionMember $ MemberExpressionPrimary $ LiteralExp  $ NumericLiteral $ DecLiteral 3
-  
-      parse' pMultiplicativeExpression "2 * 3" `shouldBe` MultiplicativeExpression e1 MultTimes e2
-    {-it "parses property names" $ -}
-      {-parse' pPropertyName ""-}
+      let e1 = OperatorExpressionLHS $ LHSExpressionNew $ NewExpressionMember $ MemberExpressionPrimary $ LiteralExp  $ NumericLiteral $ DecLiteral 2
+      let e2 = OperatorExpressionLHS $ LHSExpressionNew $ NewExpressionMember $ MemberExpressionPrimary $ LiteralExp  $ NumericLiteral $ DecLiteral 3
+      parse' pOperatorExpression "2 * 3" `shouldBe` OperatorExpressionBinary e1 MultTimes e2
+    it "parses a return statement" $ do
+      let stmt = ReturnStmt $ Just [AssignmentExpression (ConditionalExp (OperatorExpressionBinary (OperatorExpressionLHS (LHSExpressionNew (NewExpressionMember (MemberExpressionPrimary (IdentifierExp "a"))))) AddPlus (OperatorExpressionLHS (LHSExpressionNew (NewExpressionMember (MemberExpressionPrimary (LiteralExp (NumericLiteral (DecLiteral 3.0)))))))))]
+      parse' pStatement "return a + 3;" `shouldBe` stmt
+    it "parses a function" $ do
+      let dec = FunctionDeclaration "foo" (Just ["a"]) (FunctionBody (Just [SourceElement (ReturnStmt (Just [AssignmentExpression (ConditionalExp (OperatorExpressionBinary (OperatorExpressionLHS (LHSExpressionNew (NewExpressionMember (MemberExpressionPrimary (IdentifierExp "a"))))) AddPlus (OperatorExpressionLHS (LHSExpressionNew (NewExpressionMember (MemberExpressionPrimary (LiteralExp (NumericLiteral (DecLiteral 3.0)))))))))]))]))
+      parse' pFunctionDeclaration "function foo(a) { return a + 3; }" `shouldBe` dec
+    
+
     
 
       
