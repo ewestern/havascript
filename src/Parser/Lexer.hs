@@ -67,7 +67,7 @@ semiSep1 :: Parser a -> Parser [a]
 semiSep1 = Tok.semiSep1 lexer
 
 identifier :: Parser String 
-identifier = Tok.identifier lexer
+identifier = Tok.identifier lexer <?> "identifier"
 
 reserved :: String -> Parser ()
 reserved = Tok.reserved lexer

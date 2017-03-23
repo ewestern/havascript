@@ -11,11 +11,11 @@ import Debug.Trace
 pPrimaryExpression :: Parser PrimaryExpression
 pPrimaryExpression = 
         (reserved "this" >> return This)
-    <|> try (IdentifierExp <$> identifier) 
-    <|> try (LiteralExp <$> pLiteral) 
+    <|> (IdentifierExp <$> identifier <?> "Identifier expression" ) 
+    <|> LiteralExp <$> pLiteral
     <|> ArrayExp <$> pArrayLiteral 
     <|> ObjectExp <$> pObjectLiteral 
-    <|> ExpressionExp <$> pExpression <?> "Primary Expression"
+    {-<|> ExpressionExp <$> pExpression <?> "Primary Expression"-}
 
 
 
@@ -80,7 +80,7 @@ pMemberExpression =
 
 pNewExpression :: Parser NewExpression
 pNewExpression = 
-    (NewExpressionMember <$> pMemberExpression) 
+        (NewExpressionMember <$> pMemberExpression) 
     <|> reserved "new" *> (NewExpressionNew <$> pNewExpression) 
     <?> "New Expression"
 
@@ -93,15 +93,15 @@ pCallExpression =
         <?> "Call Expression"    
 
 pArguments :: Parser Arguments
-pArguments = parens (return []) <|> parens pArgumentList
+pArguments = parens pArgumentList
 
 pArgumentList :: Parser ArgumentList
-pArgumentList = commaSep1 pAssignmentExpression
+pArgumentList = commaSep pAssignmentExpression
 
 pLHSExpression :: Parser LHSExpression
 pLHSExpression = 
-            LHSExpressionNew <$> pNewExpression 
-        <|> LHSExpressionCall <$> pCallExpression 
+            try (LHSExpressionCall <$> pCallExpression )
+        <|> LHSExpressionNew <$> pNewExpression
         <?> "LHS Expression"
 
 
@@ -177,7 +177,7 @@ pPostfixOperator = (flip OperatorExpressionPostfix) <$> helper
       
 
 pTerm :: Parser OperatorExpression
-pTerm = OperatorExpressionLHS <$> pLHSExpression
+pTerm = OperatorExpressionLHS <$> pLHSExpression <?> "Term"
 
 -- start with postfix
 
@@ -195,7 +195,8 @@ pOperatorExpression = buildExpressionParser table pTerm <?> "operator expression
 
 pConditionalExp :: Parser ConditionalExp
 pConditionalExp = 
-        ConditionalExp <$> pOperatorExpression
+            try (ConditionalExp <$> pOperatorExpression)
+        {-<|> ConditionalExp <$> pTerm-}
         <|> ConditionalExpTern <$> pOperatorExpression <*> (reservedOp "?" *> pAssignmentExpression) 
         <*> (reservedOp ":" *> pAssignmentExpression) 
         <?> "Conditional Exp"
@@ -222,14 +223,14 @@ pAssignmentOperator =
         <?> "Assignment Operator"
 
 pExpression :: Parser Expression
-pExpression = commaSep1 pAssignmentExpression 
+pExpression = commaSep1 pAssignmentExpression  <?> "Expression"
 
 -- TODO: removed Block here. Look into that.
 pStatement :: Parser Statement
 pStatement =  VariableStmt <$> pVariableStatement 
           <|> EmptyStmt <$> pEmptyStatement 
           {-<|> ExpressionStmt <$> pExpressionStatement -} -- TODO!!
-          <|> IfStmt <$> pIfStatement 
+          <|> IfStmt <$> (pIfStatement  <?> "if statement")
           <|> IterationStmt <$> pIterationStatement 
           <|> ContinueStmt <$> pContinueStatement 
           <|> BreakStmt <$> pBreakStatement 
@@ -239,10 +240,11 @@ pStatement =  VariableStmt <$> pVariableStatement
           <|> SwitchStmt <$> pSwitchStatement 
           <|> ThrowStmt <$> pThrowStatement 
           <|> TryStmt <$> pTryStatement 
+          <|> BlockStmt <$> pBlock
           <|> DebugStmt <$> pDebuggerStatement  <?> "Statement"
 
 pBlock :: Parser Block 
-pBlock = braces pStatementList
+pBlock = braces pStatementList <?> "Block"
 
 pStatementList :: Parser StatementList
 pStatementList = many1 pStatement
@@ -282,7 +284,7 @@ pIfStatement = do
   st <- pStatement
   optionMaybe (reserved "else")
   st2 <- optionMaybe pStatement
-  return $ IfStatement exp st st2
+  return $ IfStatement exp st st2 
 
 pIterationStatement :: Parser IterationStatement
 pIterationStatement = try pDoWhile <|> pWhile <|> pForLHS 
@@ -305,7 +307,7 @@ pBreakStatement = reserved "break" >> (optionMaybe identifier) <* reservedOp ";"
 
 
 pReturnStatement :: Parser ReturnStatement
-pReturnStatement = reserved "return" >> (optionMaybe pExpression) <* reservedOp ";"
+pReturnStatement = reserved "return" >> (optionMaybe pExpression) <* reservedOp ";" <?> "return statement"
 
 pWithStatement :: Parser WithStatement
 pWithStatement = reserved "with" >> WithStatement <$> (parens pExpression) <*> pStatement
@@ -351,7 +353,7 @@ pFunctionDeclaration :: Parser FunctionDeclaration
 pFunctionDeclaration = do
   reserved "function"
   id <- identifier
-  fpl <- optionMaybe (parens pFormalParameterList)
+  fpl <- parens pFormalParameterList
   fb <- braces pFunctionBody
   return $ FunctionDeclaration id fpl fb
   
@@ -359,22 +361,22 @@ pFunctionExpression :: Parser FunctionExpression
 pFunctionExpression = do
   reserved "function"
   id <- optionMaybe identifier
-  fpl <- optionMaybe (parens pFormalParameterList)
+  fpl <- parens pFormalParameterList
   fb <- braces pFunctionBody
   return $ FunctionExpression id fpl fb
  
 pFormalParameterList :: Parser FormalParameterList
-pFormalParameterList = commaSep1 identifier 
+pFormalParameterList = commaSep identifier 
 
 pFunctionBody :: Parser FunctionBody
 pFunctionBody = FunctionBody <$> optionMaybe pSourceElements
 
 pProgram :: Parser Program
-pProgram = Program <$>  optionMaybe pSourceElements
+pProgram = Program <$>  pSourceElements
 
 pSourceElements :: Parser SourceElements
-pSourceElements = many1 pSourceElement
+pSourceElements = many pSourceElement
 
 pSourceElement :: Parser SourceElement
-pSourceElement = try (SourceElement <$> pStatement) <|> try (SourceElementFunc <$> pFunctionDeclaration)
+pSourceElement = SourceElement <$> pStatement <|> SourceElementFunc <$> pFunctionDeclaration <?> "source element"
 

@@ -122,7 +122,7 @@ data OperatorExpression
 
 
 data ConditionalExp = 
-  ConditionalExp OperatorExpression
+    ConditionalExp OperatorExpression
   | ConditionalExpTern OperatorExpression AssignmentExpression AssignmentExpression deriving (Eq, Show)
 
 data AssignmentExpression = 
@@ -247,11 +247,11 @@ data DebuggerStatement = Debugger deriving (Eq, Show)
 
 
 data FunctionDeclaration = 
-  FunctionDeclaration Identifier (Maybe FormalParameterList) FunctionBody deriving (Eq, Show)
+  FunctionDeclaration Identifier FormalParameterList FunctionBody deriving (Eq, Show)
 
  
 data FunctionExpression = 
-  FunctionExpression (Maybe Identifier) (Maybe FormalParameterList) FunctionBody deriving (Eq, Show)
+  FunctionExpression (Maybe Identifier) FormalParameterList FunctionBody deriving (Eq, Show)
 
 
 type FormalParameterList = [Identifier]
@@ -261,13 +261,13 @@ data FunctionBody =
 
 
 data Program = 
-  Program (Maybe SourceElements) deriving (Eq, Show)
+  Program SourceElements deriving (Eq, Show)
 
 
 type SourceElements = [SourceElement]
 
 data SourceElement = 
-  SourceElement Statement
+    SourceElement Statement
   | SourceElementFunc FunctionDeclaration deriving (Eq, Show)
 
 
