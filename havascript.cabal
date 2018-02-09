@@ -60,14 +60,28 @@ library
   exposed-modules:      Parser.Parser
                       , Parser.Syntax
                       , Parser.Lexer
+                      , Codegen.Codegen
   build-depends:       base
                     ,  parsec
+                    ,  llvm-general-pure
+                    ,  containers
+                    ,  mtl
   
   -- Directories containing source files.
   hs-source-dirs:      src
   
   -- Base language which the package is written in.
   default-language:    Haskell2010
+
+executable repl
+  hs-source-dirs:      main
+  main-is:             Main.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall -fno-warn-orphans
+  build-depends:       base
+                    ,  mtl
+                    ,  haskeline
+                    ,  havascript
+                    ,  parsec
   
 test-suite unit-test
   type:                exitcode-stdio-1.0
